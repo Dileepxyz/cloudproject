@@ -60,32 +60,6 @@ def send_emails(email_lst, file_url):
         return api_response
 
 
-# @app.route('/', methods=['GET', 'POST'])
-# def home_view():
-#     if session.get("user"):
-#         return redirect(url_for('dashboard_view'))
-
-#     if request.method == 'POST':
-#         name = request.form.get('name')
-#         email = request.form.get('email')
-#         password = request.form.get('password')
-#         partition_key_value = str(uuid.uuid4())
-#         if name and email and password:
-#             table = dynamodb.Table('User')
-
-#             table.put_item(
-#                 Item={
-#                     "user_id":partition_key_value,
-#                     'name': name,
-#                     'email': email,
-#                     'password': password
-#                 }
-#             )
-#             flash('Registration Complete!', 'success')
-#             return redirect(url_for('sign_in_view'))
-#     return render_template('sign-up.html')
-
-
 @app.route('/', methods=['GET', 'POST'])
 def home_view():
     if session.get("user"):
@@ -129,7 +103,6 @@ def home_view():
 
 
 
-
 @app.route('/sign-in', methods=['GET', 'POST'])
 def sign_in_view():
     if session.get("user"):
@@ -158,7 +131,7 @@ def sign_in_view():
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard_view():
     if not session.get("user"):
-        return redirect(url_for('login'))
+        return redirect(url_for('sign_in_view'))
     if request.method == 'POST':
         if not os.path.exists(app.config['download']):
             os.makedirs(app.config['download'])
@@ -245,9 +218,14 @@ def download_zip(filename):
         )
 
         if updated_count == 0:
-            s3.delete_object(Bucket=BUCKET_NAME, Key=filename)
+            try:
+                print(filename)
+                s3.delete_object(Bucket=BUCKET_NAME, Key=filename)
+            except Exception as e:
+                print(e)
     if count == 0:
         os.remove(os.path.join(app.config['download'], filename))
+        flash('File is not available to view.', 'danger')
         return redirect(url_for('dashboard_view'))
     else:
         return send_from_directory(app.config['download'], str(filename))
